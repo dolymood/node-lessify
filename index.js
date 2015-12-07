@@ -85,7 +85,25 @@ module.exports = function(file, package_options) {
 				return done(new Error(msg, file, e.line));
 			}
 
-			compiled = output.css; 
+			compiled = output.css;
+			compiled = compiled.replace(/url\((['"]?)(.+?)\1\)/gi, function (m, s, src) {
+				var prefix = package_options.prefix || '/';
+				if (src.charAt(0) === '/' || src.match(/^(data|http|https):/)) {
+					if (prefix.charAt(0) === '/' && prefix.charAt(1) !== '/') {
+						return m;
+					} else {
+						return m.replace(src, path.join(prefix, src).replace(/\\/g, '/'));
+					}
+				}
+				var a = path.join(mydirName, src);
+				var b = package_options.root || mydirName;
+				var c = path.relative(b, a);
+				if (c !== src) {
+					c = path.join(prefix, c);
+				}
+				c = c.replace(/\\/g, '/');
+				return m.replace(src, c);
+			});
 			if (textMode || package_options.textMode) {
 	            compiled = "module.exports = " + JSON.stringify(compiled) + ";";
 			} else {
